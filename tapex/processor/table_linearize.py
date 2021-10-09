@@ -6,7 +6,7 @@ Utils for linearizing the table content into a flatten sequence
 """
 import abc
 import abc
-from typing import Dict, List, List
+from typing import Dict, List
 
 
 class TableLinearize(abc.ABC):
@@ -28,7 +28,7 @@ class TableLinearize(abc.ABC):
         """
         pass
 
-    def process_row(self, row: List, row_index: int):
+    def process_row(self, row: List, row_index: int, headers: List):
         """
         Given a row, TableLinearize aims at converting it into a flatten sequence with special symbols.
         """
@@ -50,7 +50,7 @@ class IndexedRowTableLinearize(TableLinearize):
         # process rows
         for i, row_example in enumerate(table_content["rows"]):
             # NOTE: the row should start from row 1 instead of 0
-            _table_str += self.process_row(row_example, row_index=i + 1) + " "
+            _table_str += self.process_row(row_example, row_index=i + 1, headers=table_content['header']) + " "
         return _table_str.strip()
 
     def process_header(self, headers: List):
@@ -59,7 +59,7 @@ class IndexedRowTableLinearize(TableLinearize):
         """
         return "col : " + " | ".join(headers)
 
-    def process_row(self, row: List, row_index: int):
+    def process_row(self, row: List, row_index: int, headers: List):
         """
         Given a row, TableLinearize aims at converting it into a flatten sequence with special symbols.
         """

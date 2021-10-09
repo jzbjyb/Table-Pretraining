@@ -44,11 +44,25 @@ def download_wikitablequestions():
 
 def convert_to_tabert_format(source: Dict, target: str) -> Dict:
     example = {
-        'uuid': None,
-        'table': {'caption': '', 'header': [], 'data': [], 'used_header': []},
-        'context_before': [],
-        'context_after': []
+        'uuid': source['id'],
+        'table': {'caption': '', 'header': [], 'data': source['rows'], 'used_header': []},
+        'context_before': [source['question']],
+        'context_after': [],
+        'answer_coordinates': [(0, 0)],
+        'answers': [target]
     }
+    for h in source['header']:
+        example['table']['header'].append({
+            'name': h,
+            'name_tokens': None,
+            'type': 'text',  # TODO: assume this is useless in the following processing
+            'sample_value': {'value': None, 'tokens': [], 'ner_tags': []},
+            'sample_value_tokens': None,
+            'is_primary_key': False,
+            'foreign_key': None,
+            'used': False,
+            'value_used': False,
+        })
     return example
 
 
@@ -82,7 +96,7 @@ def build_wtq_fairseq_dataset(out_prefix, src_file, data_dir, tabert: bool = Fal
 
     examples = open(src_file, "r", encoding="utf8").readlines()
     for example in tqdm(examples[1:]):
-        _, question, table_name, answer = example.strip("\n").split("\t")
+        id, question, table_name, answer = example.strip("\n").split("\t")
         answer = answer.split("|")
         # must contain rows and header keys
         table_content = _read_table_from_file(table_name)
@@ -94,6 +108,8 @@ def build_wtq_fairseq_dataset(out_prefix, src_file, data_dir, tabert: bool = Fal
             input_source = TABLE_PROCESSOR.process_input(table_content, question, [], linearization=not tabert)
         output_target = TABLE_PROCESSOR.process_output(answer)
         if tabert:
+            input_source['id'] = id
+            input_source['question'] = question
             example = convert_to_tabert_format(input_source, output_target)
             input_f.write(json.dumps(example) + '\n')
             output_f.write(output_target + '\n')

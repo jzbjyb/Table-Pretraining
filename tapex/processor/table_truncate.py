@@ -99,7 +99,7 @@ class RowDeleteTruncate(TableTruncate):
         # guarantee the result < self.max_length
         maximum_keep_rows = 0
         for ind, row_example in enumerate(table_content["rows"]):
-            value_string = self.table_linearize.process_row(row_example, ind + 1)
+            value_string = self.table_linearize.process_row(row_example, ind + 1, table_content['header'])
             value_token_len = len(self.tokenizer.tokenize(value_string))
             # over the size limit, and take action
             if value_token_len > remain_token_len:
@@ -124,7 +124,7 @@ class RowDeleteTruncate(TableTruncate):
         value_string = ""
         for _, row_example in enumerate(table_content["rows"]):
             # use a general index to roughly estimate the overall token len
-            value_string += self.table_linearize.process_row(row_example, 100) + " "
+            value_string += self.table_linearize.process_row(row_example, 100, table_content['header']) + " "
         value_token_len = len(self.tokenizer.tokenize(value_string))
 
         if value_token_len < remain_token_len:
