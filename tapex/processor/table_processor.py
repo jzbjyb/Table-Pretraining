@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, List
+from typing import Dict, List, Union
 from .table_linearize import TableLinearize
 from .table_truncate import TableTruncate
 
@@ -15,13 +15,15 @@ class TableProcessor(object):
         self.table_truncate_funcs = table_truncate_funcs
         self.target_delimiter = target_delimiter
 
-    def process_input(self, table_content: Dict, question: str, answer: List[str]) -> str:
+    def process_input(self, table_content: Dict, question: str, answer: List[str], linearization: bool = True) -> Union[str, Dict]:
         """
         Preprocess a sentence into the expected format for model translate.
         """
         # modify a table internally
         for truncate_func in self.table_truncate_funcs:
             truncate_func.truncate_table(table_content, question, answer)
+        if not linearization:
+            return table_content
         # linearize a table into a string
         linear_table = self.table_linearize_func.process_table(table_content)
         # concat question with linear_table

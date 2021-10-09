@@ -1,17 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Dict
 import os
 import shutil
 import zipfile
 import logging
 from tqdm import tqdm
+import json
 
 from tapex.common.download import download_file
 from tapex.processor import get_default_processor
-from tapex.data_utils.preprocess_bpe import fairseq_bpe_translation
-from tapex.data_utils.preprocess_binary import fairseq_binary_translation
-from tapex.data_utils.format_converter import convert_fairseq_to_hf
+#from tapex.data_utils.preprocess_bpe import fairseq_bpe_translation
+#from tapex.data_utils.preprocess_binary import fairseq_binary_translation
+#from tapex.data_utils.format_converter import convert_fairseq_to_hf
 
 RAW_DATASET_FOLDER = "raw_dataset"
 PROCESSED_DATASET_FOLDER = "dataset"
@@ -40,7 +42,17 @@ def download_wikitablequestions():
     return wtq_raw_path
 
 
-def build_wtq_fairseq_dataset(out_prefix, src_file, data_dir):
+def convert_to_tabert_format(source: Dict, target: str) -> Dict:
+    example = {
+        'uuid': None,
+        'table': {'caption': '', 'header': [], 'data': [], 'used_header': []},
+        'context_before': [],
+        'context_after': []
+    }
+    return example
+
+
+def build_wtq_fairseq_dataset(out_prefix, src_file, data_dir, tabert: bool = False):
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 
@@ -77,12 +89,17 @@ def build_wtq_fairseq_dataset(out_prefix, src_file, data_dir):
         if out_prefix == "train":
             # in training, we employ answer to filter table rows to make LARGE tables fit into memory;
             # otherwise, we cannot utilize answer information
-            input_source = TABLE_PROCESSOR.process_input(table_content, question, answer).lower()
+            input_source = TABLE_PROCESSOR.process_input(table_content, question, answer, linearization=not tabert)
         else:
-            input_source = TABLE_PROCESSOR.process_input(table_content, question, []).lower()
-        output_target = TABLE_PROCESSOR.process_output(answer).lower()
-        input_f.write(input_source + "\n")
-        output_f.write(output_target + "\n")
+            input_source = TABLE_PROCESSOR.process_input(table_content, question, [], linearization=not tabert)
+        output_target = TABLE_PROCESSOR.process_output(answer)
+        if tabert:
+            example = convert_to_tabert_format(input_source, output_target)
+            input_f.write(json.dumps(example) + '\n')
+            output_f.write(output_target + '\n')
+        else:
+            input_f.write(input_source.lower() + "\n")
+            output_f.write(output_target.lower() + "\n")
 
     input_f.close()
     output_f.close()
@@ -111,11 +128,12 @@ if __name__ == '__main__':
     logger.info("*" * 80)
     logger.info("Process the dataset and save the processed dataset in {}".format(processed_wtq_data_dir))
     build_wtq_fairseq_dataset("train", os.path.join(wtq_raw_data_dir, "data", "random-split-1-train.tsv"),
-                              processed_wtq_data_dir)
+                              processed_wtq_data_dir, tabert=True)
     build_wtq_fairseq_dataset("valid", os.path.join(wtq_raw_data_dir, "data", "random-split-1-dev.tsv"),
-                              processed_wtq_data_dir)
+                              processed_wtq_data_dir, tabert=True)
     build_wtq_fairseq_dataset("test", os.path.join(wtq_raw_data_dir, "data", "pristine-unseen-tables.tsv"),
-                              processed_wtq_data_dir)
+                              processed_wtq_data_dir, tabert=True)
+    exit()
 
     logger.info("*" * 80)
     logger.info("Begin to BPE and build the dataset binaries in {}/bin".format(processed_wtq_data_dir))
