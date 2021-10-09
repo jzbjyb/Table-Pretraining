@@ -143,11 +143,11 @@ if __name__ == '__main__':
 
     logger.info("*" * 80)
     logger.info("Process the dataset and save the processed dataset in {}".format(processed_wtq_data_dir))
-    build_wtq_fairseq_dataset("train", os.path.join(wtq_raw_data_dir, "data", "random-split-1-train.tsv"),
+    build_wtq_fairseq_dataset("train", os.path.join(TABLE_PATH, "data", "random-split-1-train.tsv"),
                               processed_wtq_data_dir, tabert=True)
-    build_wtq_fairseq_dataset("valid", os.path.join(wtq_raw_data_dir, "data", "random-split-1-dev.tsv"),
+    build_wtq_fairseq_dataset("valid", os.path.join(TABLE_PATH, "data", "random-split-1-dev.tsv"),
                               processed_wtq_data_dir, tabert=True)
-    build_wtq_fairseq_dataset("test", os.path.join(wtq_raw_data_dir, "data", "pristine-unseen-tables.tsv"),
+    build_wtq_fairseq_dataset("test", os.path.join(TABLE_PATH, "data", "pristine-unseen-tables.tsv"),
                               processed_wtq_data_dir, tabert=True)
     exit()
 
